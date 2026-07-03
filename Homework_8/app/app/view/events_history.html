@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>История запросов — Events History</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f8f9fa; }
+        tr:hover { background-color: #f1f1f1; }
+        .status-processing { color: #e67e22; font-style: italic; }
+        .status-done { color: #2c3e50; font-weight: bold; }
+        .path-text { font-size: 0.85em; color: #666; word-break: break-all; }
+        .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; }
+    </style>
+</head>
+<body>
+
+    <a href="/private" class="back-link">← Back to Private page</a>
+
+    <h1>Events History 🦅</h1>
+    <p>Пользователь: <strong>{{ user.email }}</strong></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>File Path</th>
+                <th>Date</th>
+                <th>Result (Prediction)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events|reverse %}
+            <tr>
+                <td>{{ event.id }}</td>
+                
+                <!-- ПУТЬ К ФАЙЛУ (теперь можно кликнуть прямо по тексту) -->
+                <td class="path-text">
+                    <a href="{{ event.image | replace('../data/images/', '/uploads/') }}" target="_blank" style="color: inherit; text-decoration: none;">
+                        {{ event.image }}
+                    </a>
+                </td>
+
+                <!-- ДАТА -->
+                <td>{{ event.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+
+                <!-- РЕЗУЛЬТАТ -->
+                <td>
+                    {% if event.prediction %}
+                        <span class="status-done">{{ event.prediction }}</span>
+                    {% else %}
+                        <span class="status-processing">Analyzing...</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px;">
+                    История пуста.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+    {% include '_site_map.html' %}
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home page
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #339970; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<h1>Welcome to Kolibri Home page! 🏡</h1>
+
+<p class="important">
+    Dear birdwatcher, welcome to Kolibri application homepage. <br>
+    This application is for you to define the birds on your images.     
+    </p>
+
+</p>
+
+{% if user %}
+    <h3>You are logged in </h3>
+    <p>
+        Hello, {{ user }}! You are logged in, so you can access the private 
+        page. <a href="/private">here</a>!
+    </p>
+{% else %}
+    <h3>You are NOT logged in </h3>
+    <p>
+        Hello, stranger. You are not logged. Please follow the link to
+        <a href="/auth/login" class="btn">login</a> or 
+        <a href="/auth/signup" class="btn">signup</a> !
+    </p>
+{% endif %}
+
+<hr>
+
+{% endblock %}

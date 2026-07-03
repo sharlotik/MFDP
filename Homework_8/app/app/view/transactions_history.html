@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Billing History — История баланса</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f8f9fa; }
+        .type-deposit { color: #27ae60; font-weight: bold; } /* Зеленый для пополнения */
+        .type-withdraw { color: #e74c3c; font-weight: bold; } /* Красный для списания */
+        .back-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; }
+    </style>
+</head>
+<body>
+
+    <a href="/private" class="back-link">← Back to Private page</a>
+
+    <h1>Billing History 💳</h1>
+    <p>Пользователь: <strong>{{ user.email }}</strong></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for txn in transactions|reverse %}
+            <tr>
+                <td>{{ txn.id }}</td>
+                <td>{{ txn.report_dttm.strftime('%d.%m.%Y %H:%M') if txn.report_dttm else '---' }}</td>
+                <td>
+                    <span class="{{ 'type-deposit' if txn.txn_type == 'Deposit' else 'type-withdraw' }}">
+                        {{ txn.txn_type }}
+                    </span>
+                </td>
+                <td>
+                    {{ "+" if txn.txn_type == "Deposit" else "-" }}{{ "%.2f"|format(txn.amount) }} $
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px;">No transactions yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+    {% include '_site_map.html' %}
+
+</body>
+</html>

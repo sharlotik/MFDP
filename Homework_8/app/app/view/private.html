@@ -1,0 +1,72 @@
+<h1>Private Page 🕵️</h1>
+
+<p>Hello {{ user.email }}!</p>
+
+<p>Welcome to this private page. You can only see if you are logged in!</p>
+
+<div class="wallet-box" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+    <h3>Your balance:</h3>
+    {% if balance is not none %}
+        <p style="font-size: 24px; color: #2ecc71; font-weight: bold;">
+            {{ balance }} $
+        </p>
+    {% else %}
+        <p>Wallet not found. Contact the service.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 20px; border: 1px dashed #ccc; padding: 15px;">
+    <h4>Topup</h4>
+    <form action="/wallet/topup" method="post">
+        <input type="number" name="amount" step="0.01" min="1" placeholder="Topup amount" required>
+        <button type="submit" style="background-color: #2ecc71; color: white; border: none; padding: 5px 15px; cursor: pointer;">
+            Topup
+        </button>
+    </form>
+</div>
+<div style="margin-top: 30px; padding: 20px; border: 1px solid #ddd;">
+    <h3>Submit a review for AI Sentiment Analysis:</h3>
+    <p style="font-size: 13px; color: #7f8c8d;">Cost per analysis: 0.50 $ (Will be deducted from your balance)</p>
+    
+    <form action="/ml/predict" method="post">
+        <textarea name="text" rows="5" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;" 
+                  placeholder="Пример: Все понравилось!" required></textarea>
+        
+        <br><br>
+        <button type="submit" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            🚀 Run AI Analysis
+        </button>
+    </form>
+
+    {% if prediction %}
+        <div style="margin-top: 20px; padding: 15px; border-radius: 6px; background-color: #f8f9fa; border-left: 5px solid #3498db;">
+            <h3 style="margin-top: 0;">📊 AI Analysis Results:</h3>
+            
+            <p style="font-size: 18px;">
+                <strong>Predicted Rating:</strong> 
+                <span style="color: #f1c40f; font-weight: bold;">{{ prediction }} ★</span>
+            </p>
+            
+            {% if confidence %}
+                <p><strong>Model Confidence (Softmax):</strong> {{ (confidence * 100)|round(1) }}%</p>
+            {% endif %}
+            
+            {% if status %}
+                <p>
+                    <strong>Post-processing Status:</strong> 
+                    {% if status == 'Approved' %}
+                        <span style="color: #2ecc71; font-weight: bold;">✅ Approved (Auto-response allowed)</span>
+                    {% elif status == 'Moderation' %}
+                        <span style="color: #e67e22; font-weight: bold;">⚠️ Moderation (Low confidence. Sent to human operator)</span>
+                    {% else %}
+                        <span style="color: #7f8c8d;">⏳ {{ status }}</span>
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<hr>
+
+{% include '_site_map.html' %}
