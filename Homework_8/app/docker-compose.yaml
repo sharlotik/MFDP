@@ -10,6 +10,7 @@ services:
     volumes:
       - ./app:/app
       - ./images:/data/images
+    command: uvicorn api:app --host 0.0.0.0 --port 8080
     depends_on:
       - db
     networks:
@@ -19,7 +20,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-      start_period: 20s
+      start_period: 180s
   web:
     image: nginx:latest
     container_name: event-planner-nginx
@@ -71,6 +72,7 @@ services:
     build: ./app/
     environment:
       - PYTHONPATH=/:/app/
+      - HF_HOME=/root/.cache/huggingface
     command: python /ml_worker/main.py 
     restart: unless-stopped
     env_file:
@@ -79,6 +81,7 @@ services:
       - ./app:/app
       - ./ml_worker:/ml_worker 
       - ./images:/data/images 
+      - hf_cache:/root/.cache/huggingface       
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -93,6 +96,7 @@ volumes:
   postgres_data:
   rabbitmq_data:
   ml_worker_data:
+  hf_cache:
 
 networks:
   event-planner-network:

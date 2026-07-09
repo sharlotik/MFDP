@@ -1,5 +1,6 @@
 from models.event import Event, EventUpdate, EventBase, EventCreate
 from models.model import Model
+from models.user import User
 from models.wallet import Wallet 
 from models.transaction import Transaction
 from sqlmodel import Session, select
@@ -100,29 +101,26 @@ def create_event(event_data: EventCreate, creator_id: int,
         raise
 """
 
-def create_event(image: str, creator_id: int, 
-                session: Session) -> Event:
+
+def create_event(image: str, creator_id: int, session: Session) -> Event:
     """
-    Create new event.
-    
-    Args:
-        event_data: Input data for event
-        session: Database session
-    
-    Returns:
-        Event: Created event with ID
+    Create a new review event, auto-extract the restaurant ID from the User profile,
+    and process the wallet service payment.
     """
-  #  predict = model.predict(input_data = event_data.image)
-    event = Event(
-        title = 'Upload image to predict',     
-        image = image,
-        description = 'Upload image to predict',
-        creator_id=creator_id,
-        status = 'Image uploaded'       
-    )
     try:
-        statement = select(Wallet).where(Wallet.user_id == creator_id)
-        wallet = session.exec(statement).one()  
+        user_statement = select(User).where(User.id == creator_id)
+        user = session.exec(user_statement).one()
+        
+        detected_object_id = user.object_id  
+
+        event = Event(
+            text=image,  
+            creator_id=creator_id,
+            object_id=detected_object_id,  
+            status='Review uploaded'       
+        )
+        wallet_statement = select(Wallet).where(Wallet.user_id == creator_id)
+        wallet = session.exec(wallet_statement).one()  
 
         transaction = Transaction(
             user_id=creator_id,
@@ -130,16 +128,18 @@ def create_event(image: str, creator_id: int,
             amount=Decimal("0.01") 
         )
         transaction.execute(wallet)
+        
         session.add_all([transaction, event, wallet])
         session.commit()
-        session.refresh(event, attribute_names=["prediction", "creator_id", "creator"])
+        
+        session.refresh(event)
         return event
+        
     except Exception as e:
         session.rollback()
         raise
 
-
-def prediction_update(event_id: int, model_prediction: str, 
+def prediction_update(event_id: int, model_prediction: int, confidence_value: float, 
                 session: Session) -> Event:
     """
     Update prediction with the data from model.
@@ -153,11 +153,12 @@ def prediction_update(event_id: int, model_prediction: str,
         event = session.exec(statement).first()  
 
         event.prediction = model_prediction
+        event.confidence = confidence_value
         event.status = 'Success'
 
         session.add(event)
         session.commit()
-        session.refresh(event, attribute_names=["prediction", "creator_id", "status"])
+        session.refresh(event, attribute_names=["prediction", "confidence", "creator_id", "status"])
         return event
     except Exception as e:
         session.rollback()
@@ -178,7 +179,7 @@ def get_prediction_by_id(event_id: int, session: Session) -> Optional[str]:
         event = session.exec(statement).first()
         if event is None:
             return None
-        return event.prediction
+        return event
     except Exception as e:
         raise
 

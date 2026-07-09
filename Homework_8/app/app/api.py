@@ -6,6 +6,7 @@ from routes.user import user_route
 from routes.event import event_router
 from routes.transaction import transaction_router
 from routes.wallet import wallet_router
+from routes.object import object_router
 #from routes.model import model_router
 from database.database import init_db
 from database.config import get_settings
@@ -14,11 +15,8 @@ import logging
 from fastapi.staticfiles import StaticFiles
 import os
 
-
 logger = logging.getLogger(__name__)
 settings = get_settings()
-app = FastAPI() 
-app.mount("/uploads", StaticFiles(directory="../data/images"), name="uploads")
 
 def create_application() -> FastAPI:
     """
@@ -28,7 +26,7 @@ def create_application() -> FastAPI:
         FastAPI: Configured application instance
     """
     
-    app = FastAPI(
+    app_instance = FastAPI(
         title=settings.APP_NAME,
         description=settings.APP_DESCRIPTION,
         version=settings.API_VERSION,
@@ -37,7 +35,7 @@ def create_application() -> FastAPI:
     )
 
     # Configure CORS
-    app.add_middleware(
+    app_instance.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
@@ -46,17 +44,21 @@ def create_application() -> FastAPI:
     )
 
     # Register routes
-    app.include_router(home_route, tags=['Home'])
-    app.include_router(auth_route, prefix='/auth', tags=['Auth'])
-    app.include_router(user_route, prefix='/api/users', tags=['Users'])
-    app.include_router(event_router, prefix='/api/events', tags=['Events'])
-    app.include_router(transaction_router, prefix='/api/transactions', tags=['Transactions'])
-    app.include_router(wallet_router, prefix='/api/wallets', tags=['Wallets'])
-    #app.include_router(prediction_router, prefix='/api/predictions', tags=['Predictions'])
+    app_instance.include_router(home_route, tags=['Home'])
+    app_instance.include_router(auth_route, prefix='/auth', tags=['Auth'])
+    app_instance.include_router(user_route, prefix='/api/users', tags=['Users'])
+    app_instance.include_router(object_router, prefix='/api/objects', tags=['Objects'])
+    app_instance.include_router(event_router, prefix='/api/events', tags=['Events'])
+    app_instance.include_router(transaction_router, prefix='/api/transactions', tags=['Transactions'])
+    app_instance.include_router(wallet_router, prefix='/api/wallets', tags=['Wallets'])
 
-    return app
+    return app_instance
 
+# ⚡ Создаем единственный экземпляр app
 app = create_application()
+
+# ⚡ Привязываем статику и эндпоинты к готовому приложению
+app.mount("/uploads", StaticFiles(directory="../data/images"), name="uploads")
 
 @app.get("/test") # название ресурса
 def test():

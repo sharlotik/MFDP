@@ -5,6 +5,7 @@ import re
 
 if TYPE_CHECKING:
     from models.event import Event
+    from models.object import Object 
 
 class User(SQLModel, table=True): 
     """
@@ -27,7 +28,12 @@ class User(SQLModel, table=True):
     )
     password: str = Field(..., min_length=4) 
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    company_name: str= Field(..., min_length=2) 
+    object_id: Optional[int] = Field(default=None, foreign_key="object.id", nullable=True)
+    
+    company: Optional["Object"] = Relationship(
+        back_populates="users",
+        sa_relationship_kwargs={"lazy": "joined"}
+    )
     events: List["Event"] = Relationship(
         back_populates="creator",
         sa_relationship_kwargs={

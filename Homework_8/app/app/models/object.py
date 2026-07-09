@@ -9,15 +9,23 @@ class ObjectBase(SQLModel):
     name: str = Field(..., min_length=2, max_length=150)
     address: str = Field(..., min_length=5, max_length=255)
     place_id: Optional[str] = Field(default=None)
-
+    category: str = Field(
+        default="restaurant", 
+        min_length=3,
+        max_length=50
+    )
 
 class Object(ObjectBase, table=True):
 
-
     id: Optional[int] = Field(default=None, primary_key=True)   
-    user_id: int = Field(foreign_key="user.id")    
+    
+    users: List["User"] = Relationship(
+        back_populates="company",
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    
     events: List["Event"] = Relationship(
-        back_populates="object_rel", 
+        back_populates="object",  
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan", 
             "lazy": "selectin"
@@ -36,3 +44,4 @@ class ObjectUpdate(SQLModel):
     name: Optional[str] = None
     address: Optional[str] = None
     place_id: Optional[str] = None
+    category: Optional[str] = None

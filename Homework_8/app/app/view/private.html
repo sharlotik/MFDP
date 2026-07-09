@@ -4,7 +4,101 @@
 
 <p>Welcome to this private page. You can only see if you are logged in!</p>
 
-<div class="wallet-box" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px;">
+<!-- ФОРМА 1: Написание одиночного отзыва текстом -->
+<div style="margin-top: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+    <h3>Write your review to predict the rating based on the text:</h3>
+    
+    <form action="/ml/predict" method="post">
+        <p>
+            <!-- ИСПРАВЛЕНО: Вставлена переменная {{ current_review_text }}, чтобы текст не пропадал -->
+            <textarea name="review_text" rows="5" style="width: 100%; max-width: 500px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Type your review here..." required>{{ current_review_text }}</textarea>
+        </p>
+        <button type="submit" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+            Predict Rating
+        </button>
+    </form>
+
+    <!-- Вывод предсказания одиночного отзыва -->
+    {% if prediction %}
+        <div style="margin-top: 15px; padding: 10px; background-color: #e8f4fd; border-left: 5px solid #3498db; color: #2c3e50;">
+            <strong>Predicted Rating:</strong> {{ prediction }} <br>
+            {% if confidence and confidence != "Calculating..." %}
+                <strong>Confidence:</strong> <span style="color: #2ecc71;">{{ confidence }}</span>
+            {% endif %}
+        </div>
+    {% endif %}
+</div> <!-- ИСПРАВЛЕНО: Закрыт блок первой формы, теперь верстка не ломается -->
+
+<!-- ФОРМА 2: Загрузка файла для пакетной обработки (Excel) -->
+<div style="margin-top: 30px; padding: 20px; border: 1px solid #2ecc71; border-radius: 8px;">
+    <h3>📥 Batch Processing: Upload file to get a list with predicted ratings</h3>
+    
+    <form action="/ml/predict-file" method="post" enctype="multipart/form-data">
+        <p>
+            <input type="file" name="file" accept=".txt, .csv, .xlsx, .xls" required>
+        </p>
+        <button type="submit" style="background: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            Analyze and Show List
+        </button>
+    </form>
+</div>
+
+<!-- СПИСОК РЕЗУЛЬТАТОВ ИЗ ВЫГРУЖЕННОГО ФАЙЛА -->
+{% if uploaded_reviews or file_notification %}
+<div style="margin-top: 20px; padding: 20px; border: 1px solid #2ecc71; border-radius: 8px; background-color: #f9fbf9;">
+    
+    <!-- ИСПРАВЛЕНО: Статус загрузки файла выводится здесь, в красивой зеленой рамке -->
+    {% if file_notification %}
+        <div style="padding: 10px; background-color: #d4edda; border-left: 5px solid #28a745; color: #155724; margin-bottom: 15px; border-radius: 4px; font-weight: bold;">
+            {{ file_notification }}
+        </div>
+    {% endif %}
+
+    {% if uploaded_reviews %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0; color: #27ae60;">📊 Uploaded File Results:</h4>
+        <!-- ИСПРАВЛЕНО: При обновлении передаем file_msg, чтобы статус не исчезал, а review_text оставляем пустым -->
+        <a href="/private?batch_ids={{ batch_ids }}&file_msg=Status updated!" 
+           style="background-color: #27ae60; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer;">
+            🔄 Refresh Ratings
+        </a>
+    </div>
+
+    <ul style="list-style-type: none; padding: 0; margin: 0;">
+        {% for review in uploaded_reviews %}
+            <li style="padding: 12px; margin-bottom: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="max-width: 70%; word-break: break-word;">
+                    <span style="color: #7f8c8d; font-size: 12px; display: block;">ID: {{ review.id }}</span>
+                    <strong>Review:</strong> {{ review.image or review.text }}
+                </div>
+                <div style="text-align: right; min-width: 150px;">
+                    {% if review.prediction is not none %}
+                        <span style="display: block; font-weight: bold; color: #2c3e50; font-size: 16px;">
+                            Rating: {{ review.prediction }}
+                        </span>
+                        <span style="color: #2ecc71; font-size: 13px;">
+                            {% if review.confidence is not none %}
+                                Confidence: {{ "%.2f"|format(review.confidence * 100) }}%
+                            {% else %}
+                                Confidence: 0.00%
+                            {% endif %}
+                        </span>
+                    {% else %}
+                        <span style="color: #f39c12; font-weight: bold;">
+                            ⏳ Processing...
+                        </span>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+
+<!-- БЛОК КОШЕЛЬКА -->
+<div class="wallet-box" style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-top: 30px;">
     <h3>Your balance:</h3>
     {% if balance is not none %}
         <p style="font-size: 24px; color: #2ecc71; font-weight: bold;">
@@ -15,6 +109,7 @@
     {% endif %}
 </div>
 
+<!-- БЛОК ПОПОЛНЕНИЯ БАЛАНСА -->
 <div style="margin-top: 20px; border: 1px dashed #ccc; padding: 15px;">
     <h4>Topup</h4>
     <form action="/wallet/topup" method="post">
@@ -23,48 +118,6 @@
             Topup
         </button>
     </form>
-</div>
-<div style="margin-top: 30px; padding: 20px; border: 1px solid #ddd;">
-    <h3>Submit a review for AI Sentiment Analysis:</h3>
-    <p style="font-size: 13px; color: #7f8c8d;">Cost per analysis: 0.50 $ (Will be deducted from your balance)</p>
-    
-    <form action="/ml/predict" method="post">
-        <textarea name="text" rows="5" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;" 
-                  placeholder="Пример: Все понравилось!" required></textarea>
-        
-        <br><br>
-        <button type="submit" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            🚀 Run AI Analysis
-        </button>
-    </form>
-
-    {% if prediction %}
-        <div style="margin-top: 20px; padding: 15px; border-radius: 6px; background-color: #f8f9fa; border-left: 5px solid #3498db;">
-            <h3 style="margin-top: 0;">📊 AI Analysis Results:</h3>
-            
-            <p style="font-size: 18px;">
-                <strong>Predicted Rating:</strong> 
-                <span style="color: #f1c40f; font-weight: bold;">{{ prediction }} ★</span>
-            </p>
-            
-            {% if confidence %}
-                <p><strong>Model Confidence (Softmax):</strong> {{ (confidence * 100)|round(1) }}%</p>
-            {% endif %}
-            
-            {% if status %}
-                <p>
-                    <strong>Post-processing Status:</strong> 
-                    {% if status == 'Approved' %}
-                        <span style="color: #2ecc71; font-weight: bold;">✅ Approved (Auto-response allowed)</span>
-                    {% elif status == 'Moderation' %}
-                        <span style="color: #e67e22; font-weight: bold;">⚠️ Moderation (Low confidence. Sent to human operator)</span>
-                    {% else %}
-                        <span style="color: #7f8c8d;">⏳ {{ status }}</span>
-                    {% endif %}
-                </p>
-            {% endif %}
-        </div>
-    {% endif %}
 </div>
 
 <hr>

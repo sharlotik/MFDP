@@ -4,6 +4,7 @@ from typing import Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.user import User
+    from models.object import Object
 
 class EventBase(SQLModel):
     """
@@ -33,6 +34,7 @@ class Event(EventBase, table=True):
         sa_relationship_kwargs={"lazy": "selectin"}
     )
     object_id: Optional[int] = Field(default=None, foreign_key="object.id") 
+    object: Optional["Object"] = Relationship(back_populates="events")
     status: str =  Field(..., min_length=1, max_length=100)
     prediction: Optional[int] = Field(default=None)
     confidence: Optional[float] = Field(default=None)
@@ -54,7 +56,7 @@ class EventCreate(EventBase):
 class EventUpdate(EventBase):
     """Schema for updating existing events"""    
     status: Optional[str] = None
-    prediction: Optional[str] = None
+    prediction: Optional[int] = None
     confidence: Optional[float] = None
 
     class Config:

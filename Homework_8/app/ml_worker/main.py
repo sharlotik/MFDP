@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-# Настройка логирования 
+# Logging configuration
 
 ml_model = Model()
 
@@ -26,7 +26,7 @@ connection_params = pika.ConnectionParameters(
     port=int(os.getenv('RABBITMQ_PORT')),       
     virtual_host='/',  
     credentials=pika.PlainCredentials(
-        username= os.getenv('RABBITMQ_USER'),  
+        username=os.getenv('RABBITMQ_USER'),  
         password=os.getenv('RABBITMQ_PASSWORD')   
     ),
     heartbeat=30,
@@ -36,30 +36,30 @@ connection_params = pika.ConnectionParameters(
 connection = pika.BlockingConnection(connection_params)
 channel = connection.channel()
 queue_name = 'ml_task_queue'
-channel.queue_declare(queue=queue_name, durable = True)  
-
+channel.queue_declare(queue=queue_name, durable=True)  
 
 
 def callback(ch, method, properties, body):    
-
     try:
         task = json.loads(body)
         event_id = task.get("event_id")
-        image_path = task.get("image_path")        
+        
+        # Read the raw text payload from the queue configuration
+        review_text = task.get("text") or task.get("text_content")        
         logger.info(f"Received: '{body}'")
 
-        filename = os.path.basename(image_path)
-        full_path = os.path.join("/data/images", filename)
+        if not review_text:
+            raise ValueError(f"Missing review text content for Event ID: {event_id}")
 
-        if not os.path.exists(full_path):
-            raise FileNotFoundError(f"File not found: {full_path}")
-
-        prediction = ml_model.predict(full_path)
+        predicted_rating, confidence = ml_model.predict(review_text)
+        prediction_result=predicted_rating  
+        confidence_value=float(confidence)
+       # prediction_result_string = f"Rating: {predicted_rating}⭐ | Confidence: {confidence * 100:.2f}%"
+        
         time.sleep(3) 
-      #  ch.basic_ack(delivery_tag=method.delivery_tag)
 
         with Session(engine) as session:
-            EventService.prediction_update(event_id, prediction, session)
+            EventService.prediction_update(event_id, prediction_result, confidence_value, session)
 
         logger.info(f" Success {event_id}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -71,7 +71,6 @@ def callback(ch, method, properties, body):
 
 channel.basic_qos(prefetch_count=1)
 
-
 channel.basic_consume(
     queue=queue_name,
     on_message_callback=callback,
@@ -80,5 +79,3 @@ channel.basic_consume(
 
 logger.info('Waiting for messages. To exit, press Ctrl+C')
 channel.start_consuming()
-
-
